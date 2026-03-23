@@ -2,6 +2,8 @@ package com.example.worthmate_backend.auth.entity;
 
 import jakarta.persistence.*;
 
+import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -32,6 +34,11 @@ public class Mentor {
 
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.MENTOR;
+
+    private Double rating = 0.0;
+
+    @ElementCollection
+    private List<LocalTime> availableSlots;
 
     // Getters & Setters
 
@@ -97,5 +104,21 @@ public class Mentor {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public List<LocalTime> getAvailableSlots() {
+        return availableSlots;
+    }
+
+    public void setAvailableSlots(List<LocalTime> availableSlots) {
+        this.availableSlots = availableSlots;
     }
 }
