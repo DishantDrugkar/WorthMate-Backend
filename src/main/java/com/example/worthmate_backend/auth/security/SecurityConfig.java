@@ -1,4 +1,4 @@
-package com.example.worthmate_backend.auth.config;
+package com.example.worthmate_backend.auth.security;
 
 import com.example.worthmate_backend.auth.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("api/mentors/**").permitAll()
+                        .requestMatchers("/api/mentors/**").permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",

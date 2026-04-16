@@ -1,5 +1,6 @@
 package com.example.worthmate_backend.auth.controller;
 
+import com.example.worthmate_backend.auth.dto.MentorProfileRequest;
 import com.example.worthmate_backend.auth.entity.Mentor;
 import com.example.worthmate_backend.auth.service.MentorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/mentors")
 public class MentorController {
@@ -41,5 +42,12 @@ public class MentorController {
     public Mentor updateRating(@PathVariable UUID id,
                                      @RequestParam Double rating) {
         return mentorService.updateRating(id, rating);
+    }
+
+    @PostMapping("/complete-profile")
+    public String completeProfile(@RequestBody MentorProfileRequest request,
+                                  @RequestHeader("Authorization") String token) {
+        mentorService.completeProfile(request, token);
+        return "Profile saved successfully";
     }
 }
