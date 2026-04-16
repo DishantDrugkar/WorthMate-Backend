@@ -5,6 +5,7 @@ import com.example.worthmate_backend.auth.dto.LoginRequest;
 import com.example.worthmate_backend.auth.dto.MentorSignUpRequest;
 import com.example.worthmate_backend.auth.dto.SignUpRequest;
 import com.example.worthmate_backend.auth.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,8 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/signup/user")
-    public ResponseEntity<AuthResponse> signup(@RequestBody SignUpRequest request) {
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignUpRequest request) {
+        System.out.println("PASSWORD RECEIVED: " + request.getPassword());
         return new ResponseEntity<>(authService.signupUser(request), HttpStatus.CREATED);
     }
 

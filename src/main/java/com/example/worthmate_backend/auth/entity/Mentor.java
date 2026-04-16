@@ -24,7 +24,7 @@ public class Mentor {
     private String email;
 
     @Column(nullable = false)
-    private String password;
+    private String PasswordHash;
 
     @Column
     private String title;
@@ -40,7 +40,61 @@ public class Mentor {
     @ElementCollection
     private List<LocalTime> availableSlots;
 
-    // Getters & Setters
+    @Column
+    private String skills;
+
+    @Column
+    private Integer experience;
+
+    @Column
+    private Integer hourlyRate;
+
+    @Column
+    private String linkedin;
+
+    @ElementCollection
+    private List<String> expertise;
+
+    public List<String> getExpertise() {
+        return expertise;
+    }
+
+    public void setExpertise(List<String> expertise) {
+        this.expertise = expertise;
+    }
+// Getters & Setters
+
+    public String getLinkedin() {
+        return linkedin;
+    }
+
+    public void setLinkedin(String linkedin) {
+        this.linkedin = linkedin;
+    }
+
+    public Integer getHourlyRate() {
+        return hourlyRate;
+    }
+
+    public void setHourlyRate(Integer hourlyRate) {
+        this.hourlyRate = hourlyRate;
+    }
+
+    public Integer getExperience() {
+        return experience;
+    }
+
+    public void setExperience(Integer experience) {
+        this.experience = experience;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
 
     public UUID getId() {
         return id;
@@ -74,12 +128,12 @@ public class Mentor {
         this.email = email;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return PasswordHash;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPasswordHash(String passwordHash) {
+        PasswordHash = passwordHash;
     }
 
     public String getTitle() {

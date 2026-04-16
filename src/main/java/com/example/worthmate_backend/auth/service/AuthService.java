@@ -72,7 +72,7 @@ public class AuthService {
         Optional<Mentor> mentorOpt = mentorRepository.findByEmail(request.getEmail());
         if(mentorOpt.isPresent()) {
             Mentor mentor = mentorOpt.get();
-            if(!passwordEncoder.matches(request.getPassword(), mentor.getPassword())) {
+            if(!passwordEncoder.matches(request.getPassword(), mentor.getPasswordHash())) {
                 throw new RuntimeException("Invalid password");
             }
             String token = jwtTokenProvider.generateToken(mentor.getEmail(), mentor.getRole().name(), mentor.getId().toString());
@@ -91,7 +91,7 @@ public class AuthService {
         mentor.setFirstName(request.getFirstName());
         mentor.setLastName(request.getLastName());
         mentor.setEmail(request.getEmail());
-        mentor.setPassword(passwordEncoder.encode(request.getPassword()));
+        mentor.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         mentor.setTitle(request.getTitle());
         mentor.setBio(request.getBio());
 
