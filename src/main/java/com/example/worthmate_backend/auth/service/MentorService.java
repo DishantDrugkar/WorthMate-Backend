@@ -37,6 +37,7 @@ public class MentorService {
         mentor.setTitle(updatedMentor.getTitle());
         mentor.setBio(updatedMentor.getBio());
         mentor.setPasswordHash(updatedMentor.getPasswordHash());
+        mentor.setProfilePic(updatedMentor.getProfilePic());
         return mentorRepository.save(mentor);
     }
 
