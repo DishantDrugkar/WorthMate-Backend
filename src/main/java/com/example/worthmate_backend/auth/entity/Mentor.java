@@ -52,6 +52,9 @@ public class Mentor {
     @Column
     private String linkedin;
 
+    @Column(name = "profile_pic")
+    private String profilePic;
+
     @ElementCollection
     private List<String> expertise;
 
@@ -174,5 +177,13 @@ public class Mentor {
 
     public void setAvailableSlots(List<LocalTime> availableSlots) {
         this.availableSlots = availableSlots;
+    }
+
+    public String getProfilePic() {
+        return profilePic;
+    }
+
+    public void setProfilePic(String profilePic) {
+        this.profilePic = profilePic;
     }
 }
