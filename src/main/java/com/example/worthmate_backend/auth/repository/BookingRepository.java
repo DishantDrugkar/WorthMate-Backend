@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findByUserId(UUID userId);
     List<Booking> findByMentorId(UUID mentorId);
+    boolean existsByMentorIdAndDateAndTime(UUID mentorId, java.time.LocalDate date, java.time.LocalTime time);
 }
