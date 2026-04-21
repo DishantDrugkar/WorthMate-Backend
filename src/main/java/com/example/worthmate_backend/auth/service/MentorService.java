@@ -95,8 +95,5 @@ public class MentorService {
         if (request.getLinkedin() != null) {
             mentor.setLinkedin(request.getLinkedin());
         }
-
-        // ❌ REMOVE THIS LINE
-        // mentorRepository.save(mentor);
     }
 }

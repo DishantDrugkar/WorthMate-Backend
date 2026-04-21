@@ -3,7 +3,9 @@ package com.example.worthmate_backend.auth.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -18,13 +20,14 @@ public class Booking {
     private UUID userId;
     private UUID mentorId;
 
-    private LocalDateTime bookingTime;
-
     private String status; // PENDING, CONFIRMED, CANCELLED
 
     private String meetingLink;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private LocalDate date;
+    private LocalTime time;
 
     // getters & setters
 }
