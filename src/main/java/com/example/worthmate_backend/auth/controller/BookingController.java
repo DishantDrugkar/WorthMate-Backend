@@ -43,17 +43,41 @@ public class BookingController {
     @GetMapping("/{bookingId}")
     public ResponseEntity<?> getBooking(@PathVariable UUID bookingId) {
 
-        Booking booking = bookingService.getBookingById(bookingId);
+        try {
+            System.out.println("Fetching booking: " + bookingId); // ✅ debug
 
-        Mentor mentor = mentorRepository.findById(booking.getMentorId())
-                .orElseThrow();
+            Booking booking = bookingService.getBookingById(bookingId);
 
-        return ResponseEntity.ok(Map.of(
-                "bookingId", booking.getId(),
-                "mentorName", mentor.getFirstName() + " " + mentor.getLastName(),
-                "mentorQrCode", mentor.getQrCodeUrl(),
-                "amount", mentor.getHourlyRate()
-        ));
+            if (booking == null) {
+                return ResponseEntity.status(404).body(Map.of(
+                        "message", "Booking not found"
+                ));
+            }
+
+            Mentor mentor = mentorRepository.findById(booking.getMentorId())
+                    .orElse(null);
+
+            if (mentor == null) {
+                return ResponseEntity.status(404).body(Map.of(
+                        "message", "Mentor not found"
+                ));
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "id", booking.getId(),
+                    "mentorName", mentor.getFirstName() + " " + mentor.getLastName(),
+                    "mentorQrCode", mentor.getQrCodeUrl(),
+                    "amount", mentor.getHourlyRate()
+            ));
+
+        } catch (Exception e) {
+            e.printStackTrace(); // 🔥 MUST
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "message", "Server error",
+                    "error", e.getMessage()
+            ));
+        }
     }
 
     @GetMapping("/mentor/{mentorId}")
