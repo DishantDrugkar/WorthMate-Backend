@@ -6,6 +6,7 @@ import com.example.worthmate_backend.auth.repository.AvailabilityRepository;
 import com.example.worthmate_backend.auth.security.JwtTokenProvider;
 import com.example.worthmate_backend.auth.service.AvailabilityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -50,4 +51,39 @@ public class AvailabilityController {
         return "Slots generated successfully";
     }
 
+    @GetMapping("/{mentorId}/availability/all")
+    @PreAuthorize("hasRole('MENTOR')")
+    public List<Availability> getAllSlots(@PathVariable UUID mentorId) {
+        return availabilityRepository.findByMentorId(mentorId);
+    }
+
+    @GetMapping("/{mentorId}/availability/upcoming")
+    public List<Availability> getUpcomingSlots(@PathVariable UUID mentorId) {
+        return availabilityRepository.findByMentorIdAndDateAfter(
+                mentorId,
+                LocalDate.now().minusDays(1)
+        );
+    }
+
+    @DeleteMapping("/availability/{slotId}")
+    @PreAuthorize("hasRole('MENTOR')")
+    public String deleteSlot(
+            @PathVariable UUID slotId,
+            @RequestHeader("Authorization") String token
+    ) {
+        token = token.replace("Bearer ", "");
+        UUID mentorId = UUID.fromString(jwtTokenProvider.getUserId(token));
+
+        Availability slot = availabilityRepository.findById(slotId)
+                .orElseThrow(() -> new RuntimeException("Slot not found"));
+
+        // 🔐 Security check (mentor apna hi slot delete kare)
+        if (!slot.getMentorId().equals(mentorId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        availabilityRepository.deleteById(slotId);
+
+        return "Slot deleted successfully";
+    }
 }

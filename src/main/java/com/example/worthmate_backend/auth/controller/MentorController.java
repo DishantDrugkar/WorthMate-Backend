@@ -4,6 +4,7 @@ import com.example.worthmate_backend.auth.dto.MentorProfileRequest;
 import com.example.worthmate_backend.auth.entity.Mentor;
 import com.example.worthmate_backend.auth.service.MentorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalTime;
@@ -49,5 +50,10 @@ public class MentorController {
                                   @RequestHeader("Authorization") String token) {
         mentorService.completeProfile(request, token);
         return "Profile saved successfully";
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Mentor> getMentorById(@PathVariable UUID id) {
+        return ResponseEntity.ok(mentorService.getMentorById(id));
     }
 }
