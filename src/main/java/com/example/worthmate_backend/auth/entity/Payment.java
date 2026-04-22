@@ -1,13 +1,12 @@
 package com.example.worthmate_backend.auth.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.Data;
 
 import java.util.UUID;
 @Entity
 @Table(name = "payment")
+@Data
 public class Payment {
     @Id
     @GeneratedValue
@@ -17,5 +16,9 @@ public class Payment {
     private Double amount;
     private String status; // SUCCESS, FAILED
 
-    private String provider; // STRIPE, RAZORPAY
+    private String provider; //RAZORPAY
+    private String paymentId;
+
+    @Column(name = "order_id")
+    private String orderId;
 }

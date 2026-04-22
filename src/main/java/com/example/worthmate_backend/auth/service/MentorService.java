@@ -96,4 +96,9 @@ public class MentorService {
             mentor.setLinkedin(request.getLinkedin());
         }
     }
+
+    public Mentor getMentorById(UUID id) {
+        return mentorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mentor not found"));
+    }
 }

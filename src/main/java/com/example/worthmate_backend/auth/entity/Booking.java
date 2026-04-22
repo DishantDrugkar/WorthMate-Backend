@@ -29,5 +29,9 @@ public class Booking {
     private LocalDate date;
     private LocalTime time;
 
-    // getters & setters
+    private String razorpayOrderId;
+
+    private UUID availabilityId;
+
+    private Double amount;
 }

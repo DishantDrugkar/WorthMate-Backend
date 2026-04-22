@@ -57,7 +57,7 @@ public class AvailabilityService {
                     availabilityRepository.save(slot);
                 }
 
-                time = time.plusMinutes(30); // 🔥 better than 1 hour slots
+                time = time.plusMinutes(60); // 🔥 better than 1 hour slots
             }
         }
     }
