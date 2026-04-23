@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 @RestController
@@ -54,7 +55,18 @@ public class AvailabilityController {
     @GetMapping("/{mentorId}/availability/all")
     @PreAuthorize("hasRole('MENTOR')")
     public List<Availability> getAllSlots(@PathVariable UUID mentorId) {
-        return availabilityRepository.findByMentorId(mentorId);
+
+        List<Availability> slots = availabilityRepository.findByMentorId(mentorId);
+
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+
+        return slots.stream()
+                .filter(slot ->
+                        slot.getDate().isAfter(today) ||
+                                (slot.getDate().isEqual(today) && slot.getTime().isAfter(now))
+                )
+                .toList();
     }
 
     @GetMapping("/{mentorId}/availability/upcoming")

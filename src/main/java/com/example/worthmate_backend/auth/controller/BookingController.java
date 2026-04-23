@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
@@ -28,64 +31,114 @@ public class BookingController {
     @Autowired
     private BookingRepository bookingRepository;
 
-    // ✅ BOOK SLOT
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    // ================= BOOK SLOT =================
     @PostMapping
-    public ResponseEntity<?> bookSlot(@RequestBody BookingRequest request, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> bookSlot(
+            @RequestBody BookingRequest request,
+            @RequestHeader("Authorization") String token
+    ) {
 
         Booking booking = bookingService.createBooking(request, token);
 
         return ResponseEntity.ok(Map.of(
-                "bookingId", booking.getId()
+                "bookingId", booking.getId(),
+                "message", "Booking created successfully"
         ));
     }
 
-    // ✅ GET BOOKING DETAILS
+    // ================= GET BOOKING =================
     @GetMapping("/{bookingId}")
     public ResponseEntity<?> getBooking(@PathVariable UUID bookingId) {
 
         try {
-            System.out.println("Fetching booking: " + bookingId); // ✅ debug
-
             Booking booking = bookingService.getBookingById(bookingId);
 
-            if (booking == null) {
-                return ResponseEntity.status(404).body(Map.of(
-                        "message", "Booking not found"
-                ));
-            }
-
             Mentor mentor = mentorRepository.findById(booking.getMentorId())
-                    .orElse(null);
-
-            if (mentor == null) {
-                return ResponseEntity.status(404).body(Map.of(
-                        "message", "Mentor not found"
-                ));
-            }
+                    .orElseThrow(() -> new RuntimeException("Mentor not found"));
 
             return ResponseEntity.ok(Map.of(
                     "id", booking.getId(),
                     "mentorName", mentor.getFirstName() + " " + mentor.getLastName(),
                     "mentorQrCode", mentor.getQrCodeUrl(),
-                    "amount", mentor.getHourlyRate()
+                    "amount", mentor.getHourlyRate(),
+                    "paid", booking.getPaid(),
+                    "confirmed", booking.getConfirmed(),
+                    "availabilityId", booking.getAvailabilityId(),
+                    "userId", booking.getUserId(),
+                    "mentorId", booking.getMentorId()
             ));
 
         } catch (Exception e) {
-            e.printStackTrace(); // 🔥 MUST
-
-            return ResponseEntity.status(500).body(Map.of(
-                    "message", "Server error",
-                    "error", e.getMessage()
+            return ResponseEntity.status(400).body(Map.of(
+                    "message", e.getMessage()
             ));
         }
     }
 
+
+    // ================= MENTOR BOOKINGS =================
     @GetMapping("/mentor/{mentorId}")
     public ResponseEntity<?> getMentorBookings(@PathVariable UUID mentorId) {
 
         List<Booking> bookings = bookingRepository.findByMentorId(mentorId);
 
-        return ResponseEntity.ok(bookings);
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+
+        List<Booking> filtered = bookings.stream()
+                .filter(b ->
+                        b.getDate() != null &&
+                                (b.getDate().isAfter(today) ||
+                                        (b.getDate().isEqual(today) && b.getTime().isAfter(now)))
+                )
+                .toList();
+
+        return ResponseEntity.ok(filtered);
     }
 
+    // ================= USER BOOKINGS (FIXED) =================
+    @GetMapping("/user")
+    public ResponseEntity<?> getUserBookings(
+            @RequestHeader("Authorization") String token
+    ) {
+
+        token = token.replace("Bearer ", "");
+        String email = jwtTokenProvider.getEmail(token);
+
+        UUID userId = UUID.nameUUIDFromBytes(email.getBytes());
+
+        List<Booking> bookings = bookingRepository.findByUserId(userId);
+
+        return ResponseEntity.ok(bookings);
+    }
+    // ================= CONFIRM PAYMENT =================
+    @PostMapping("/confirm/{bookingId}")
+    public ResponseEntity<?> confirmBooking(@PathVariable UUID bookingId) {
+
+        System.out.println("CONFIRM API HIT: " + bookingId);
+
+        Booking booking = bookingService.getBookingById(bookingId);
+
+        if (booking == null) {
+            System.out.println("BOOKING NULL");
+            return ResponseEntity.status(404).body(Map.of("message", "Booking not found"));
+        }
+
+        System.out.println("BEFORE UPDATE: " + booking.getConfirmed());
+
+        booking.setPaid(true);
+        booking.setConfirmed(true);
+
+        Booking saved = bookingRepository.save(booking);
+
+        System.out.println("AFTER SAVE: " + saved.getConfirmed());
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Booking confirmed",
+                "confirmed", saved.getConfirmed()
+        ));
+    }
 }

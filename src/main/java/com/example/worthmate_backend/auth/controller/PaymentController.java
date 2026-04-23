@@ -1,100 +1,134 @@
 package com.example.worthmate_backend.auth.controller;
 
+import com.example.worthmate_backend.auth.dto.BookingRequest;
 import com.example.worthmate_backend.auth.entity.Booking;
-import com.example.worthmate_backend.auth.entity.Payment;
 import com.example.worthmate_backend.auth.repository.BookingRepository;
-import com.example.worthmate_backend.auth.repository.PaymentRepository;
-import com.example.worthmate_backend.auth.repository.AvailabilityRepository;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.UUID;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/payment")
 public class PaymentController {
 
     @Autowired
-    private PaymentRepository paymentRepository;
-
-    @Autowired
     private BookingRepository bookingRepository;
 
     @Autowired
-    private AvailabilityRepository availabilityRepository;
+    private RazorpayClient razorpayClient;
 
-    // =========================================
-    // 🔥 RAZORPAY WEBHOOK (PRODUCTION FLOW)
-    // =========================================
-    @PostMapping("/webhook")
-    public Map<String, Object> razorpayWebhook(@RequestBody Map<String, Object> payload) {
+    @Value("${razorpay.key.secret}")
+    private String keySecret;
+
+    // ================= CREATE ORDER =================
+    @PostMapping("/create-order")
+    public ResponseEntity<?> createOrder(@RequestBody BookingRequest req) {
 
         try {
 
-            // ================================
-            // 1. EXTRACT PAYMENT DATA
-            // ================================
-            Map<String, Object> paymentEntity =
-                    (Map<String, Object>) payload.get("payload");
+            JSONObject options = new JSONObject();
 
-            Map<String, Object> payment =
-                    (Map<String, Object>) paymentEntity.get("payment");
+            int amountInPaise = (int) Math.round(req.getAmount() * 100);
 
-            Map<String, Object> entity =
-                    (Map<String, Object>) payment.get("entity");
+            options.put("amount", amountInPaise);
+            options.put("currency", "INR");
 
-            String razorpayPaymentId = (String) entity.get("id");
-            String razorpayOrderId = (String) entity.get("order_id");
+            // FIXED receipt length issue
+            String receipt = "rcpt_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+            options.put("receipt", receipt);
 
-            // ================================
-            // 2. FIND BOOKING
-            // ================================
-            Booking booking = bookingRepository
-                    .findByRazorpayOrderId(razorpayOrderId)
+            Order order = razorpayClient.orders.create(options);
+
+            Booking booking = new Booking();
+            booking.setUserId(null);
+            booking.setMentorId(req.getMentorId());
+            booking.setAmount(req.getAmount());
+            booking.setDate(req.getDate());
+            booking.setTime(req.getTime());
+            booking.setStatus("PENDING");
+            booking.setPaid(false);
+            booking.setConfirmed(false);
+            booking.setAvailabilityId(req.getAvailabilityId());
+            booking.setRazorpayOrderId(order.get("id"));
+
+            Booking saved = bookingRepository.save(booking);
+
+            return ResponseEntity.ok(Map.of(
+                    "orderId", order.get("id"),
+                    "amount", amountInPaise,
+                    "bookingId", saved.getId()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ================= VERIFY =================
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyPayment(@RequestBody Map<String, String> body) {
+
+        try {
+
+            String orderId = body.get("razorpay_order_id");
+            String paymentId = body.get("razorpay_payment_id");
+            String signature = body.get("razorpay_signature");
+
+            String payload = orderId + "|" + paymentId;
+
+            String generatedSignature = hmacSHA256(payload, keySecret);
+
+            if (!generatedSignature.equals(signature)) {
+                return ResponseEntity.badRequest().body(Map.of("status", "failed"));
+            }
+
+            Booking booking = bookingRepository.findByRazorpayOrderId(orderId)
                     .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-            // ================================
-            // 3. SAVE PAYMENT
-            // ================================
-            Payment pay = new Payment();
-            pay.setBookingId(booking.getId());
-            pay.setAmount(booking.getAmount());
-            pay.setStatus("SUCCESS");
-            pay.setProvider("RAZORPAY");
-            pay.setPaymentId(razorpayPaymentId);
-            pay.setOrderId(razorpayOrderId);
-
-            paymentRepository.save(pay);
-
-            // ================================
-            // 4. CONFIRM BOOKING
-            // ================================
+            booking.setPaid(true);
+            booking.setConfirmed(true);
             booking.setStatus("CONFIRMED");
 
-            String meetingLink =
+            booking.setMeetingLink(
                     "https://meet.google.com/" +
-                            UUID.randomUUID().toString().substring(0, 8);
-
-            booking.setMeetingLink(meetingLink);
+                            UUID.randomUUID().toString().substring(0, 8)
+            );
 
             bookingRepository.save(booking);
 
-            // ================================
-            // 5. MARK SLOT BOOKED
-            // ================================
-            availabilityRepository.deleteById(booking.getAvailabilityId());
-
-            return Map.of(
-                    "status", "success"
-            );
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "bookingId", booking.getId()
+            ));
 
         } catch (Exception e) {
-
-            return Map.of(
-                    "status", "failed",
+            return ResponseEntity.status(500).body(Map.of(
                     "error", e.getMessage()
-            );
+            ));
         }
+    }
+
+    private String hmacSHA256(String data, String secret) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        mac.init(key);
+
+        byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hash) sb.append(String.format("%02x", b));
+
+        return sb.toString();
     }
 }

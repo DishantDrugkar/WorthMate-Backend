@@ -34,4 +34,10 @@ public class Booking {
     private UUID availabilityId;
 
     private Double amount;
+
+    @Column(name = "paid", nullable = false)
+    private Boolean paid = false;
+
+    @Column(name = "confirmed", nullable = false)
+    private Boolean confirmed = false;
 }

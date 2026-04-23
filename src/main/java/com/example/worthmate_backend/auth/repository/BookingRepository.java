@@ -13,4 +13,6 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     Optional<Booking> findByRazorpayOrderId(String razorpayOrderId);
 
     List<Booking> findByMentorId(UUID mentorId);
+
+    List<Booking> findByUserId(UUID userId);
 }
