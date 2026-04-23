@@ -25,57 +25,35 @@ public class BookingService {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
-    // ✅ CREATE BOOKING
     @Transactional
     public Booking createBooking(BookingRequest request, String token) {
 
-        // 🔐 extract user from token
         token = token.replace("Bearer ", "");
         String email = jwtTokenProvider.getEmail(token);
 
-        // ⚠️ ideally DB se userId nikalo (future improvement)
         UUID userId = UUID.nameUUIDFromBytes(email.getBytes());
 
-        // 📦 fetch slot FIRST (IMPORTANT)
         Availability slot = availabilityRepository.findById(request.getAvailabilityId())
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-        // ❌ DB level double booking protection
-        boolean alreadyBooked = bookingRepository.existsByMentorIdAndDateAndTime(
-                slot.getMentorId(),
-                slot.getDate(),
-                slot.getTime()
-        );
-
-        if (alreadyBooked) {
+        if (slot.isBooked()) {
             throw new RuntimeException("Slot already booked");
         }
 
-        // ❌ slot already marked booked
-        if (slot.isBooked()) {
-            throw new RuntimeException("This slot is already booked");
-        }
-
-        // ❌ past date booking block
         if (slot.getDate().isBefore(LocalDate.now())) {
             throw new RuntimeException("Cannot book past dates");
         }
 
-        // ✅ mark slot booked
-        slot.setBooked(true);
-        availabilityRepository.save(slot);
-
-        // ✅ create booking
         Booking booking = new Booking();
         booking.setUserId(userId);
         booking.setMentorId(slot.getMentorId());
         booking.setDate(slot.getDate());
         booking.setTime(slot.getTime());
-        booking.setStatus("CONFIRMED");
-
-        // 🔗 meeting link generate
-        booking.setMeetingLink(generateMeetingLink());
-
+        booking.setStatus("PENDING");
+        booking.setAvailabilityId(slot.getId());
+        booking.setAmount(request.getAmount());
+        booking.setPaid(false);
+        booking.setConfirmed(false);
         return bookingRepository.save(booking);
     }
 
@@ -112,6 +90,6 @@ public class BookingService {
 
     // 🔗 helper method
     private String generateMeetingLink() {
-        return "https://meet.worthmate.com/" + UUID.randomUUID();
+        return "https://meet.jit.si/" + UUID.randomUUID();
     }
 }

@@ -33,7 +33,7 @@ public class AvailabilityService {
 
         LocalDate today = LocalDate.now();
 
-        for (int i = 0; i < 14; i++) { // 🔥 increase range
+        for (int i = 0; i < 7; i++) { // 🔥 increase range
 
             LocalDate date = today.plusDays(i);
             DayOfWeek day = date.getDayOfWeek();
